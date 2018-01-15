@@ -17,6 +17,7 @@ TITLE = "Tic-tac-toe"
 SCREEN_SIZE = 490
 MARGIN = 10
 TILE_SIZE = 150
+HIGHLIGHT_SIZE = TILE_SIZE + 10
 
 
 def main():
@@ -28,42 +29,35 @@ def main():
 
     pygame.init()
 
-    tile_coords = get_tile_coords()
-    for i in range(0, 3):
-        print(tile_coords[i], tile_coords[i + 1], tile_coords[i + 2])
-        i += 3
-
-    highlighTile = None
+    # create a new game board
+    board = Board()
 
     while True:
         for event in pygame.event.get():
             checkForExit(event)
 
             if event.type == MOUSEMOTION:
-                mousex, mousey = event.pos
-                highlighTile = highlight_title(mousex, mousey, tile_coords)
+                mouseX, mouseY = event.pos
+                board.highlight_under_mouse(mouseX, mouseY)
 
-        DISPLAYSURF.fill(BLACK)
+            if event.type == MOUSEBUTTONDOWN:
+                clickedIndex = board.get_clicked(mouseX, mouseY)
+                if clickedIndex > -1:
+                    print("tile ", clickedIndex, " was clicked")
 
-        draw(tile_coords, highlighTile)
+
+        board.draw()
+
         pygame.display.update()
         FPSCLOCK.tick(FPS)
 
 
+# Check and handle a quit event
 def checkForExit(event):
     if event.type == QUIT:
         print("exiting py-tic-tac-toe")
         pygame.quit()
         sys.exit()
-
-
-def highlight_title(mousex, mousey, tile_coords):
-    for tile in tile_coords:
-        t = pygame.Rect(tile[0], tile[1], TILE_SIZE, TILE_SIZE)
-
-        if t.collidepoint(mousex, mousey):
-            return t
-    return None
 
 
 def get_tile_coords():
@@ -83,12 +77,71 @@ def get_tile_coords():
     return tile_coordinates
 
 
-def draw(coords, highlighTile):
-    for t in coords:
-        pygame.draw.rect(DISPLAYSURF, GREY, (t[0], t[1], TILE_SIZE, TILE_SIZE))
+class Player:
+    symbol = ""
+    name = ""
 
-    if highlighTile:
-        pygame.draw.rect(DISPLAYSURF, WHITE, highlighTile)
+    def __init__(self, symbol, name):
+        self.symbol = symbol
+        self.name = name
+
+
+class Board:
+    tiles = []
+
+    def __init__(self):
+        self.tiles = []
+        coords = get_tile_coords()
+        for i in range(0, 9):
+            self.tiles.append(Tile(coords[i][0], coords[i][1]))
+
+    def get_tile(self, index):
+        return self.tiles[index]
+
+    def highlight_under_mouse(self, mouseX, mouseY):
+        for tile in self.tiles:
+            if tile.Rect.collidepoint(mouseX, mouseY):
+                tile.highlighted = True
+            else:
+                tile.highlighted = False
+
+    def get_clicked(self, mouseX, mouseY):
+        for i in range(0, len(self.tiles)):
+            t = self.tiles[i]
+            if t.Rect.collidepoint(mouseX, mouseY):
+                return i
+        return -1
+
+    def draw(self):
+        DISPLAYSURF.fill(BLACK)
+
+        for tile in self.tiles:
+            if tile.highlighted:
+                pygame.draw.rect(DISPLAYSURF, WHITE, tile.highlightRect)
+
+            pygame.draw.rect(DISPLAYSURF, GREY, tile.Rect)
+
+
+class Tile:
+    value = None
+    highlighted = False
+    Rect = None
+    highlightRect = None
+
+    def __init__(self, xco, yco):
+        self.value = None
+        self.Rect = pygame.Rect(xco, yco, TILE_SIZE, TILE_SIZE)
+        self.highlightRect = pygame.Rect(self.Rect.topleft[0] - 5, self.Rect.topleft[1] - 5, HIGHLIGHT_SIZE,
+                                         HIGHLIGHT_SIZE)
+
+    def is_empty(self):
+        return self.value is None
+
+    def is_highlighted(self):
+        return self.highlighted
+
+    def set_value(self, value):
+        self.value = value
 
 
 if __name__ == '__main__':
